@@ -48,47 +48,63 @@ Every experiment published in this repository should be interpreted as part of t
 
 ## Repository Structure
 
+```text
 Simulation/
 ├── README.md
 │
 ├── assets/
 │   ├── graphics/
-│   ├── visualizations/
-│   └── media/
+│   │   ├── baseline/
+│   │   │   └── grafik_analisis_avatar*.png
+│   │   └── enhanced-model/
+│   │       └── Plot_*.png
+│   └── visual/
+│       └── eionic_*.mp4
 │
 ├── data/
 │   └── experiments/
-│       ├── 3_Avatars_Initial/
+│       ├── 3_avatars_initial/
+│       │   ├── 11557 ticks.xlsx
 │       │   ├── logs/
-│       │   ├── statistics/
-│       │   ├── analysis.md
+│       │   │   ├── baseline/
+│       │   │   │   └── multi_avatar_hormones_log*.txt
+│       │   │   └── enhanced-model/
+│       │   │       └── multi_avatar_hormones_log_60_*.txt
+│       │   └── statistics/
+│       │       ├── action_diversity
+│       │       ├── action_evolution
+│       │       ├── hormone_entropy
+│       │       └── README.md
 │       │
-│       ├── 6_Avatars/
-│       │   ├── v1_old/
-│       │   │   ├── logs/
-│       │   │   ├── conversation_logs/
-│       │   │   └── selftalk_logs/
-│       │   │
-│       │   ├── v2_latest/
-│       │   │   ├── logs/
-│       │   │   ├── conversation_logs/
-│       │   │   ├── selftalk_logs/
-│       │   │   ├── statistics/
-│       │   │   └── analysis.md
-│       │
-│       └── README.md
+│       └── 6_Avatars/
+│           ├── v1/
+│           │   ├── Six_Avatars.xlsx
+│           │   └── graphics/
+│           │       └── avatar_*.png
+│           └── v2/
+│               ├── conversation_log.txt
+│               ├── eionic_analysis_6_ava_newconvo.xlsx
+│               ├── event_log.txt
+│               ├── inner_log.txt
+│               ├── narrative_log.txt
+│               └── graphics/
+│                   └── avatar_*.png
 │
 ├── docs/
 │   ├── architecture/
-│   ├── papers/
-│   ├── research_notes/
-│   └── archive/
+│   │   └── eionic_architecture.docx
+│   └── research/
+│       ├── eionic - bounded stochastic agency.pdf
+│       ├── eionic_whitepaper.pdf
+│       └── README_old.md
 │
 └── tools/
+    ├── README.md
     └── map_replay/
-        ├── replay.html
-        ├── replay_script.js
+        ├── map_log.txt
+        ├── map_replay.html
         └── README.md
+```
 
 Detailed experiment data, logs, analyses, and replay files are organized under the experiments directory as the project continues to evolve.
 
