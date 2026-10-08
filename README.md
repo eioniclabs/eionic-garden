@@ -1,6 +1,6 @@
 # EIONIC-Labs
 
-**Modular simulation engine for autonomous agents — bounded stochastic agency.**
+Modular simulation engine for autonomous agents — bounded stochastic agency.
 
 > Can life-like behaviour emerge from rich internal blueprints, physiological dynamics, memory systems, and environmental interaction—without using an LLM as the cognitive core?
 
@@ -8,7 +8,7 @@
 
 ## About
 
-EIONIC is an experimental **Artificial Life (ALife)** research project exploring how complex, persistent, and adaptive behaviour can emerge from rich internal architectures rather than from Large Language Models acting as the cognitive core.
+EIONIC is an experimental Artificial Life (ALife) research project exploring how complex, persistent, and adaptive behaviour can emerge from rich internal architectures rather than from Large Language Models acting as the cognitive core.
 
 The project focuses on autonomous agents with:
 
@@ -18,21 +18,41 @@ The project focuses on autonomous agents with:
 - Procedural decision making
 - Long-term behavioural stability
 
-Simulation runs have already completed **tens of thousands of simulation ticks**, spanning multiple in-game years while exhibiting measurable behavioural divergence between autonomous agents.
+Simulation runs have already completed tens of thousands of simulation ticks, spanning multiple in-game years while exhibiting measurable behavioural divergence between autonomous agents.
 
-Although the current prototype is implemented in Python, the long-term objective is to integrate the simulation into **Unreal Engine 5**, allowing autonomous agents to exist as fully autonomous NPCs whose behaviour emerges from internal systems rather than scripted logic.
+The engine has been ported from Python to C++. The C++ port is now the primary development target. The long-term objective is to integrate the simulation into Unreal Engine 5, allowing autonomous agents to exist as fully autonomous NPCs whose behaviour emerges from internal systems rather than scripted logic.
 
 ---
 
 ## Repository Status
 
-This is the canonical development repository for **EIONIC**. 
+This is the canonical development repository for EIONIC.
 
-The previous development repository became permanently inaccessible following an unrecoverable hardware failure. https://github.com/eionic/eionic-garden
+The previous development repository became permanently inaccessible following an unrecoverable hardware failure.
 
-The project itself has **not restarted from zero**. This repository continues several years of ongoing research, architecture refinement, experimentation, and simulation development.
+https://github.com/eionic/eionic-garden
+
+The project itself has not restarted from zero. This repository continues several years of ongoing research, architecture refinement, experimentation, and simulation development.
 
 Historical experiments, datasets, analyses, and documentation will be republished progressively as they are reviewed and reorganized.
+
+---
+
+## Engine Port Status
+
+The EIONIC engine has been ported from Python to C++.
+
+### Port status
+
+- Parity with Python engine: 7/7 output categories matched (hormone log, world snapshot, map log, event log, decision log, memory, DAI)
+- Test suite: 57/57 checks passed
+- Determinism verified: two runs with identical seed produce byte-identical output, excluding wall-clock timestamps
+
+### Known differences from Python
+
+- Micro-action tie-break: the C++ port uses a fixed rule. Python used string-set ordering, which varied between processes. See v3 README for details.
+
+First published C++ run: **6 Avatars, v3 — 3,500 ticks + 20,000-tick stability check.**
 
 ---
 
@@ -81,14 +101,21 @@ Simulation/
 │           │   ├── Six_Avatars.xlsx
 │           │   └── graphics/
 │           │       └── avatar_*.png
-│           └── v2/
-│               ├── conversation_log.txt
-│               ├── eionic_analysis_6_ava_newconvo.xlsx
-│               ├── event_log.txt
-│               ├── inner_log.txt
-│               ├── narrative_log.txt
-│               └── graphics/
-│                   └── avatar_*.png
+│           ├── v2/
+│           │   ├── conversation_log.txt
+│           │   ├── eionic_analysis_6_ava_newconvo.xlsx
+│           │   ├── event_log.txt
+│           │   ├── inner_log.txt
+│           │   ├── narrative_log.txt
+│           │   └── graphics/
+│           │       └── avatar_*.png
+│           └── v3/
+│               ├── README.md
+│               ├── SixAvatars_v3.xlsx
+│               ├── map_log.txt
+│               ├── stability.csv
+│               ├── stability_report.py
+│               └── stability_report.txt
 │
 ├── docs/
 │   ├── architecture/
@@ -110,7 +137,7 @@ Detailed experiment data, logs, analyses, and replay files are organized under t
 
 ---
 
-Research Data
+## Research Data
 
 This repository progressively publishes:
 
@@ -127,9 +154,9 @@ The objective is to make experimental results as transparent, inspectable, and r
 
 ---
 
-Current Progress
+## Current Progress
 
-Current prototype includes:
+Current implementation includes:
 
 - Long-running autonomous simulations
 - Internal physiology
@@ -141,12 +168,14 @@ Current prototype includes:
 - Statistical logging
 - Replay visualization
 - Epoch-based world priors
+- C++ engine port (parity 7/7 with Python, 57/57 checks passed)
+- Determinism verification (byte-identical output across runs)
 
 The current implementation focuses on validating the behavioural architecture before migration into a real-time interactive environment.
 
 ---
 
-Future Direction
+## Future Direction
 
 The next major milestone is integrating the simulation into Unreal Engine 5.
 
@@ -163,22 +192,23 @@ Future development aims to explore:
 
 ---
 
-Tools
+## Tools
 
-Map Replay
+### Map Replay
 
-A lightweight HTML-based replay tool is available in [`tools/map_replay/`](tools/map_replay/) to visualize simulation logs and agent movements.
+A lightweight HTML-based replay tool is available in `tools/map_replay/` to visualize simulation logs and agent movements.
 
-**How to use:**
-1. Open `tools/map_replay/replay.html` in your browser.
+### How to use
+
+1. Open `tools/map_replay/map_replay.html` in your browser.
 2. Load a valid `map_log.txt` file (located in `data/experiments/.../logs/`).
 3. Use the playback controls to step through ticks or play the simulation.
 
-This tool requires no server or internet connection, it runs entirely client-side.
+This tool requires no server or internet connection; it runs entirely client-side.
 
 ---
 
-Experimental Nature
+## Experimental Nature
 
 EIONIC is an active research project.
 
@@ -188,8 +218,8 @@ Negative results, unexpected behaviours, and failed experiments are considered v
 
 ---
 
-License
+## License
 
-See the "LICENSE" file.
+See the `LICENSE` file.
 
-«History can be lost. Research should not be.»
+> *“History can be lost. Research should not be.”*
