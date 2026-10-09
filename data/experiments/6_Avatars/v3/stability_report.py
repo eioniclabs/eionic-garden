@@ -20,7 +20,14 @@ WHAT IT MEASURES (per window of N ticks, pooled over avatars)
   spread of cortisol (do avatars stay different from each other?).
 Then it prints heuristic flags (thresholds are at the top of this file and are
 rules of thumb, not scientific constants): SATURATION, ABSORBING ZONE, ENTROPY
-COLLAPSE, HOMOGENIZATION, DRIFT, or STATIONARY.
+COLLAPSE, HOMOGENIZATION, DRIFT, or BOUNDED.
+
+NOTE ON RESOLUTION
+  All statistics are computed per window (default: 500 ticks). Window means
+  smooth out within-window dynamics: a system with constant window means can
+  still exhibit substantial tick-to-tick variation. The verdict describes
+  long-run boundedness at the window level, not the presence or absence of
+  short-term dynamics. Use a smaller --window for finer resolution.
 """
 import argparse, csv, glob, math, os, re, sys
 from collections import Counter, defaultdict
@@ -179,6 +186,7 @@ def main():
             sys.exit("CSV is empty: %s" % a.from_csv)
         fields = [f for f in ALL_FIELDS if "mean_" + f in stats[0]]
         print("source: %s (%d windows, %d avatar-ticks per window)" % (a.from_csv, len(stats), int(stats[0]["n"])))
+        W = a.window
     else:
         if not a.path:
             sys.exit("Give a log folder/file, or use --from-csv stability.csv")
@@ -302,9 +310,11 @@ def main():
         for x in flags:
             print("  - " + x)
     elif all(abs(d) < STATIONARY_ABS for d in deltas.values()):
-        print("  - STATIONARY: no saturation, no collapse. Largest early->late change: %s %+.3f "
+        print("  - BOUNDED AND STATIONARY AT WINDOW LEVEL: no saturation, no collapse. Largest early->late change: %s %+.3f "
               "(window-to-window sd of that variable: %.3f)." % (big, deltas[big], noise[big]))
-        print("    Stable, but also not evolving: the averages do not move over the whole run.")
+        print("    Window means do not drift over the run. This describes the aggregate: it measures")
+        print("    long-run boundedness, not the presence or absence of tick-level dynamics.")
+        print("    Resolution: %d-tick windows. Smaller windows reveal more short-term variation." % W)
     else:
         print("  - No collapse flags. Largest early->late change: %s %+.3f (window-to-window sd %.3f); inspect the table."
               % (big, deltas[big], noise[big]))
