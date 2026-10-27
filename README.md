@@ -109,13 +109,22 @@ Simulation/
 │           │   ├── narrative_log.txt
 │           │   └── graphics/
 │           │       └── avatar_*.png
-│           └── v3/
+│           ├── v3/
+│           │   ├── README.md
+│           │   ├── SixAvatars_v3.xlsx
+│           │   ├── map_log.txt
+│           │   ├── stability.csv
+│           │   ├── stability_report.py
+│           │   └── stability_report.txt
+│           └── v4/
 │               ├── README.md
-│               ├── SixAvatars_v3.xlsx
-│               ├── map_log.txt
-│               ├── stability.csv
-│               ├── stability_report.py
-│               └── stability_report.txt
+│               ├── baseline.xlsx
+│               ├── narrated.xlsx
+│               ├── map_log_base.txt
+│               ├── map_log_narrated.txt
+│               ├── narrative_log.txt
+│               ├── conversation_log.txt
+│               └── inner_log.txt
 │
 ├── docs/
 │   ├── architecture/
@@ -151,6 +160,15 @@ This repository progressively publishes:
 - Research documentation
 
 The objective is to make experimental results as transparent, inspectable, and reproducible as possible.
+
+---
+
+## Experiments
+
+- [v1](data/experiments/6_Avatars/v1/) — first six-avatar run
+- [v2](data/experiments/6_Avatars/v2/) — conversation logging
+- [v3](data/experiments/6_Avatars/v3/) — stability analysis
+- [v4](data/experiments/6_Avatars/v4/) — **lexicon narration**. First release where narration is generated locally by a lexicon instead of an external language model.
 
 ---
 
@@ -221,5 +239,15 @@ Negative results, unexpected behaviours, and failed experiments are considered v
 ## License
 
 See the `LICENSE` file.
+
+---
+
+## Attribution
+
+The v4 lexicon uses data from **Open English WordNet** (2025 Edition),
+licensed under CC BY 4.0. See [`ATTRIBUTION-OEWN.md`](ATTRIBUTION-OEWN.md)
+for details.
+
+---
 
 > *“History can be lost. Research should not be.”*
