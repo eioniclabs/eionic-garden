@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Eionic replay viewer</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#eef1ee;--card:#fbfcfa;--ink:#1d2622;--mut:#5d6b65;--line:#d3dbd5;--map:#e6ece6;--grid:rgba(0,0,0,.07);
+--performed:#2f8f4e;--relieved:#2a8a9a;--moot:#8b958f;--patience_deferred:#d99a1c;--timeout_deferred:#c26a1d;--interrupt_deferred:#b7791f;--dropped_max:#b83a3a;--walk:#2f6fd0;--sleep:#6d5bc0;--talk:#c9792b;--stay:#8b958f}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10171a;--card:#172126;--ink:#e3ece7;--mut:#93a39b;--line:#2a393f;--map:#0f1d1f;--grid:rgba(255,255,255,.06);
+--performed:#4cc27a;--relieved:#4cc0d2;--moot:#7e8c86;--patience_deferred:#f0b43c;--timeout_deferred:#e8893a;--interrupt_deferred:#d9a441;--dropped_max:#e86a6a;--walk:#6aa3ff;--sleep:#a193f0;--talk:#f0a05a;--stay:#93a39b}}
+:root[data-theme="dark"]{--bg:#10171a;--card:#172126;--ink:#e3ece7;--mut:#93a39b;--line:#2a393f;--map:#0f1d1f;--grid:rgba(255,255,255,.06);
+--performed:#4cc27a;--relieved:#4cc0d2;--moot:#7e8c86;--patience_deferred:#f0b43c;--timeout_deferred:#e8893a;--interrupt_deferred:#d9a441;--dropped_max:#e86a6a;--walk:#6aa3ff;--sleep:#a193f0;--talk:#f0a05a;--stay:#93a39b}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*:before,*:after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Avenir Next","Segoe UI",system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.w{max-width:1120px;margin:0 auto;padding:16px}
+h1{font-size:1.5rem;line-height:1.2;margin:0 0 6px;letter-spacing:-.01em}h2{font-size:1.05rem;margin:0 0 8px}
+p{margin:0 0 8px;max-width:76ch}.mut{color:var(--mut)}.small{font-size:.85rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:14px}
+.top{display:flex;gap:12px;justify-content:space-between;align-items:flex-start}
+button,select{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer}
+button:focus-visible,select:focus-visible,input:focus-visible,.ev:focus-visible{outline:2px solid var(--performed);outline-offset:2px}
+.grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:14px}
+@media(max-width:820px){.grid{grid-template-columns:1fr}}
+#cv{width:100%;aspect-ratio:1;display:block;border-radius:8px;background:var(--map)}
+.ctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}#sl{flex:1 1 180px;min-width:120px}#clk{font-weight:600}
+.av{display:grid;grid-template-columns:12px 1fr;gap:2px 8px;padding:7px 0;border-top:1px solid var(--line)}.av:first-child{border-top:0}
+.dot{width:12px;height:12px;border-radius:50%;margin-top:5px}
+.chip{display:inline-block;padding:0 7px;border-radius:99px;font-size:.8rem;border:1px solid currentColor;white-space:nowrap}
+.ev{display:block;width:100%;text-align:left;border:0;border-top:1px solid var(--line);border-radius:0;padding:6px 0;background:none}
+.bar{display:flex;height:16px;border-radius:5px;overflow:hidden;background:var(--line);margin:4px 0}.bar i{display:block;height:100%}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.stats b{display:block;font-size:1.7rem;line-height:1.1}
+.lg{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:.85rem;margin-bottom:8px}
+.lg span:before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;background:var(--c)}
+.row{margin-bottom:12px}
+#drop{border:2px dashed var(--line);border-radius:10px;padding:14px;text-align:center}#drop.on{border-color:var(--performed)}
+.mode{padding:6px 10px;border-radius:8px;border:1px solid var(--line);margin:8px 0}
+.err{color:var(--dropped_max)}
+</style></head><body><div class="w">
+<div class="top"><div><h1>Eionic replay viewer</h1>
+<p class="mut">Loads the logs a run wrote and replays them in your browser. Nothing is uploaded; there is no server and no embedded run data.</p></div>
+<button id="th" type="button">Theme: auto</button></div>
+
+<div class="card"><h2>1. Load your run</h2>
+<div id="drop"><p>Drop files here, or choose them:</p>
+<input id="fi" type="file" multiple accept=".txt,.jsonl,.ndjson,.json,.log" aria-label="Choose log files">
+<p class="small mut" style="margin:8px auto 0">Required: <b>map_log.txt</b>. Optional: <b>timeline.jsonl</b> or <b>stream_v2.ndjson</b> (intra-tick segments, needs <code>TIMELINE.enabled: True</code>; either file works, the stream replay carries the same segments), <b>goal_log.jsonl</b> (errand outcomes), <b>anchors.json</b> (made by <code>devtools/export_viewer_anchors.py</code>; the stock 15-anchor village is built in).</p></div>
+<div id="ld" class="small" style="margin-top:8px"></div></div>
+
+<div id="app" hidden>
+<div class="mode small" id="mode"></div>
+<div class="grid"><div class="card">
+<canvas id="cv" role="img" aria-label="Map of the village with moving avatars"></canvas>
+<div class="ctl"><button id="pv" type="button" aria-label="Previous tick">&#9664; tick</button><button id="pl" type="button">Play</button><button id="nx" type="button" aria-label="Next tick">tick &#9654;</button>
+<select id="sp" aria-label="Speed"><option value="0.0667">real pace (1 tick = 60 real min)</option><option value="10">10 sim min/s</option><option value="30" selected>30 sim min/s</option><option value="120">2 sim h/s</option><option value="240">1 tick/s</option><option value="960">4 ticks/s</option></select></div>
+<div class="ctl"><span id="clk"></span></div>
+<div class="ctl"><input id="sl" type="range" min="0" value="0" step="1" aria-label="Time position (simulated minutes)"></div>
+<p class="small mut" style="margin-top:8px">Dashed ring: errand under way, heading to the place. Solid ring: at the place. The ring takes the outcome colour on the tick the errand ends. Squares = homes, diamonds = anchors (green circle = resource node). Trail = last 24 simulated hours.</p></div>
+<div><div class="card"><h2>Avatars now</h2><div id="avs"></div></div>
+<div class="card"><h2>Errand events</h2><div id="evs" class="small"></div></div></div></div>
+<div class="card"><h2>Metrics (whole run)</h2><div class="stats" id="st"></div><p class="small mut" style="margin-top:8px" id="stn"></p></div>
+<div class="card" id="gc"><h2>Errand outcomes by type, as logged</h2><div class="lg" id="lg"></div><div id="oc"></div>
+<p class="small mut">Relieved = recovery and de_stress end because the need dropped; by design, not a failure. Deferred = the intention is kept and returns about a day later, at most twice. seek_exploration has no need data. Types with fewer than 10 errands are marked small samples.</p></div>
+<div class="card small"><b>What this page shows, and what it does not.</b>
+<p>Positions per tick, the action, the zone and the errands are engine output. With <code>timeline.jsonl</code>, the walk duration comes from the engine (distance divided by gait speed) and the anchors are the engine&rsquo;s. Two things are presentation, not simulation: <i>when</i> inside the tick a walk starts (a hash draw per avatar and tick; no RNG is consumed) and the straight line of the walk (the engine moves one straight vector per tick; the real path belongs to the client&rsquo;s navmesh). Without a timeline file this page falls back to a straight-line glide over the whole 4 hours, which is a display artifact. When two avatars talk, their talk windows may not overlap in time; a client should start a conversation only when both are present. The page replays saved logs and does not re-run the engine.</p></div>
+</div>
+
+<script>
+const DEFAULT_ANCHORS=[{"id":"home_BlueY","kind":"home","owner":"BlueY","node":null,"x_m":180,"y_m":220},{"id":"home_OrangeZ","kind":"home","owner":"OrangeZ","node":null,"x_m":820,"y_m":250},{"id":"home_GreenX","kind":"home","owner":"GreenX","node":null,"x_m":220,"y_m":780},{"id":"home_ChocoS","kind":"home","owner":"ChocoS","node":null,"x_m":780,"y_m":780},{"id":"home_PurpleO","kind":"home","owner":"PurpleO","node":null,"x_m":450,"y_m":200},{"id":"home_RediS","kind":"home","owner":"RediS","node":null,"x_m":550,"y_m":820},{"id":"cafe_01","kind":"cafe","owner":null,"node":"vitality_node","x_m":520,"y_m":500},{"id":"market_01","kind":"market","owner":null,"node":"connection_node","x_m":620,"y_m":560},{"id":"square_bench","kind":"bench","owner":null,"node":null,"x_m":470,"y_m":620},{"id":"park_bench","kind":"bench","owner":null,"node":null,"x_m":300,"y_m":150},{"id":"pond_edge","kind":"water","owner":null,"node":"clarity_node","x_m":120,"y_m":330},{"id":"quiet_garden","kind":"garden","owner":null,"node":null,"x_m":330,"y_m":330},{"id":"orchard_edge","kind":"field","owner":null,"node":"vitality_node","x_m":150,"y_m":700},{"id":"lookout_hill","kind":"hill","owner":null,"node":"inspiration_node","x_m":850,"y_m":120},{"id":"wild_clearing","kind":"clearing","owner":null,"node":null,"x_m":880,"y_m":880}];
+const COL=['#3b82f6','#f08a24','#2fa866','#9a6b3f','#9b5de5','#e5484d'],TM=240;
+const ZC=['80,170,150','230,170,60','130,110,200','220,90,80','110,160,70'];
+const TC={seek_pleasure:'#d9468f',seek_exploration:'#2a8a9a',seek_connection:'#c9792b',seek_creation:'#7a5cd0',recovery:'#5b8f3a',de_stress:'#3a7fc9'};
+const TYPES=['seek_pleasure','seek_exploration','seek_connection','seek_creation','recovery','de_stress'];
+const OUTS=['performed','relieved','moot','patience_deferred','timeout_deferred','interrupt_deferred','dropped_max'];
+const OL={performed:'performed',relieved:'relieved',moot:'moot: need eased without the act',patience_deferred:'deferred: patience ran out',timeout_deferred:'deferred: timed out',interrupt_deferred:'deferred: interrupted',dropped_max:'dropped: deferral limit'};
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const $=i=>document.getElementById(i),v=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+let S=null,tm=0,play=false,last=0,W=0,sig='',theme='auto',files={};
+const cv=$('cv'),cx=cv.getContext('2d');
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function parseMap(txt){
+ const L=txt.split(/\r?\n/),hd={};let zones={},names=[],start=null;
+ for(const l of L.slice(0,14)){let m;
+  if(m=l.match(/^Started\s*:\s*(\d+)-(\d+)-(\d+) (\d+):(\d+)/))start=Date.UTC(+m[1],m[2]-1,+m[3],+m[4],+m[5]);
+  if(l.startsWith('Zones')){for(const z of l.matchAll(/(\w+)\[(\d+)-(\d+),(\d+)-(\d+)\]/g))zones[z[1]]=[+z[2],+z[4],+z[3],+z[5]]}
+  if(l.startsWith('Avatars'))names=l.split(':')[1].split(',').map(s=>s.trim())}
+ if(!names.length||!start)throw new Error('map_log header not recognised (need Started and Avatars lines)');
+ const zn=Object.keys(zones),acts=[],tg=[],P=[],ix=(a,x)=>{let i=a.indexOf(x);if(i<0){a.push(x);i=a.length-1}return i};
+ for(const blk of txt.split(/\n(?=T:\d+)/).slice(1)){const row=[];
+  for(const m of blk.matchAll(/^  (\w+) +\( *([\d.]+), *([\d.]+)\) +(\w+) +(\w+) .*?(?:\u2192(\S+))?\s*$/gm)){
+   const k=names.indexOf(m[1]);if(k<0)continue;row[k]=[+m[2],+m[3],ix(zn,m[4]),ix(acts,m[5]),m[6]?ix(tg,m[6]):-1]}
+  if(row.length===names.length)P.push(row)}
+ if(!P.length)throw new Error('no tick blocks parsed from map_log');
+ return{names,zones,zn,start,P,acts,tg}}
+function parseJsonl(t){return t.split(/\r?\n/).filter(Boolean).map(l=>JSON.parse(l))}
+function build(){
+ const M=parseMap(files.map),T=M.P.length,N=M.names.length;S=Object.assign(M,{T,N,A:files.anchors||DEFAULT_ANCHORS,TL:null,G:[]});
+ if(files.tl||files.rp){S.TL=Array.from({length:T},()=>Array(N).fill(null));let n=0;
+  const recs=files.tl?parseJsonl(files.tl):parseJsonl(files.rp).flatMap(p=>p.avatars.filter(v=>v.segments).map(v=>({tick:p.tick,avatar:v.avatar_id,tick_minutes:p.tick_minutes||TM,segments:v.segments,body:v.body,anchor_prev:v.anchor_prev,anchor_next:v.anchor_next})));
+  for(const r of recs){const a=S.names.indexOf(r.avatar),i=r.tick-1;if(a>=0&&i>=0&&i<T){S.TL[i][a]=r;n++}}
+  S.tlN=n;S.tlSrc=files.tl?'timeline.jsonl':'stream_v2.ndjson (stream replay)'}
+ if(files.goal){S.G=parseJsonl(files.goal).map(r=>{const o=(r.outcome==='moot'&&(r.type==='recovery'||r.type==='de_stress'))?'relieved':r.outcome,n=(r.acts||[]).length;
+  return{tk:r.tick,a:S.names.indexOf(r.agent),ty:r.type,o,ar:r.arrived,s:Math.max(1,r.created>=0?r.created:r.tick-n+1)}}).filter(g=>g.a>=0)}
+ S.E=S.names.map(()=>Array(T).fill(-1));S.G.forEach((g,k)=>{for(let t=g.s;t<=g.tk&&t<=T;t++)S.E[g.a][t-1]=k});
+ $('sl').max=T*TM-1;tm=0;$('sl').value=0;sig='';
+ $('mode').innerHTML=S.TL?`<b>Mode: timeline.</b> ${S.tlN} segment records loaded from ${S.tlSrc}; avatars stand still, walk for the engine-computed minutes, then stand again.`:'<b>Mode: straight-line glide.</b> No timeline.jsonl loaded, so each avatar is drawn gliding across the whole 4-hour tick. That is a display artifact, not engine behaviour.';
+ $('gc').hidden=!S.G.length;stats();outcomes();$('app').hidden=false;size()}
+function posAt(a,t){const i=Math.min(S.T-1,Math.floor(t/TM)),m=t-i*TM,r=S.TL&&S.TL[i][a];
+ if(r){const sg=r.segments;let s=sg[sg.length-1];for(const q of sg)if(m<q.t1){s=q;break}
+  if(s.type==='walk'){const u=Math.max(0,Math.min(1,(m-s.t0)/(s.t1-s.t0)));return{x:(s.from_m[0]+(s.to_m[0]-s.from_m[0])*u)/10,y:(s.from_m[1]+(s.to_m[1]-s.from_m[1])*u)/10,s,r}}
+  return{x:s.pos_m[0]/10,y:s.pos_m[1]/10,s,r}}
+ const p0=S.P[Math.max(0,i-1)][a],p1=S.P[i][a],u=i===0?1:m/TM;return{x:p0[0]+(p1[0]-p0[0])*u,y:p0[1]+(p1[1]-p0[1])*u,s:null,r:null}}
+function status(a,i){const k=S.E[a][i];if(k<0)return null;const g=S.G[k];if(g.tk===i+1)return{g,s:'end'};return{g,s:(g.ar>=0&&i+1>=g.ar)?'place':'walk'}}
+function fmt(t){const d=new Date(S.start+t*6e4),p=n=>String(n).padStart(2,'0');return`${d.getUTCDate()} ${MON[d.getUTCMonth()]} ${d.getUTCFullYear()}, ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}`}
+function size(){const r=cv.getBoundingClientRect(),dp=devicePixelRatio||1;W=r.width;cv.width=Math.round(W*dp);cv.height=Math.round(W*dp);cx.setTransform(dp,0,0,dp,0,0)}
+function draw(){if(!S)return;const s=W/100,X=x=>x*s,i=Math.min(S.T-1,Math.floor(tm/TM));cx.clearRect(0,0,W,W);
+ cx.strokeStyle=v('--grid');cx.lineWidth=1;for(let g=0;g<=100;g+=20){cx.beginPath();cx.moveTo(X(g),0);cx.lineTo(X(g),W);cx.moveTo(0,X(g));cx.lineTo(W,X(g));cx.stroke()}
+ cx.font=`${Math.max(10,W/60)}px system-ui,sans-serif`;
+ S.zn.forEach((z,k)=>{const b=S.zones[z];if(!b)return;const c=ZC[k%5];cx.fillStyle=`rgba(${c},.17)`;cx.fillRect(X(b[0]),X(b[1]),X(b[2]-b[0]),X(b[3]-b[1]));cx.strokeStyle=`rgba(${c},.55)`;cx.strokeRect(X(b[0]),X(b[1]),X(b[2]-b[0]),X(b[3]-b[1]));cx.fillStyle=v('--mut');cx.fillText(z,X(b[0])+5,X(b[1])+13)});
+ for(const a of S.A){const x=X(a.x_m/10),y=X(a.y_m/10),home=a.kind==='home';cx.save();cx.translate(x,y);
+  if(home){cx.fillStyle=COL[Math.max(0,S.names.indexOf(a.owner))%6];cx.fillRect(-4,-4,8,8)}else{cx.rotate(Math.PI/4);cx.fillStyle=v('--ink');cx.globalAlpha=.8;cx.fillRect(-3.5,-3.5,7,7);cx.rotate(-Math.PI/4);cx.globalAlpha=1;if(a.node){cx.strokeStyle=v('--performed');cx.lineWidth=2;cx.beginPath();cx.arc(0,0,8,0,7);cx.stroke()}}
+  cx.restore();if(!home){cx.fillStyle=v('--mut');cx.fillText(a.id,x+9,y+4)}}
+ const cur=[];
+ for(let a=0;a<S.N;a++){const c=posAt(a,tm);cur.push(c);cx.lineWidth=2;cx.lineCap='round';cx.strokeStyle=COL[a%6];let pp=posAt(a,Math.max(0,tm-1440));
+  for(let t=Math.max(0,tm-1440)+30;t<=tm+29;t+=30){const q=posAt(a,Math.min(t,tm));cx.globalAlpha=.15+.5*Math.min(1,(t-(tm-1440))/1440);cx.beginPath();cx.moveTo(X(pp.x),X(pp.y));cx.lineTo(X(q.x),X(q.y));cx.stroke();pp=q}cx.globalAlpha=1}
+ for(let a=0;a<S.N;a++){const c=cur[a],x=X(c.x),y=X(c.y),st=status(a,i);
+  if(st){cx.lineWidth=2.5;cx.strokeStyle=st.s==='end'?v('--'+st.g.o):(TC[st.g.ty]||'#888');cx.setLineDash(st.s==='walk'?[4,3]:[]);cx.beginPath();cx.arc(x,y,st.s==='end'?13:11,0,7);cx.stroke();cx.setLineDash([])}
+  cx.fillStyle=COL[a%6];cx.beginPath();cx.arc(x,y,c.s&&c.s.type==='walk'?7.5:6.5,0,7);cx.fill();cx.strokeStyle=v('--card');cx.lineWidth=1.5;cx.beginPath();cx.arc(x,y,6.5,0,7);cx.stroke()}
+ cx.font=`600 ${Math.max(10,W/58)}px system-ui,sans-serif`;
+ for(let a=0;a<S.N;a++){const c=cur[a],lab=`${S.names[a]} ${c.s?(c.s.type==='walk'?'walk':c.s.activity||c.s.type):S.acts[S.P[i][a][3]]}`,tw=cx.measureText(lab).width,lx=Math.min(X(c.x)+10,W-tw-3),ly=X(c.y)-8+((a%3)-1)*11;
+  cx.fillStyle=v('--card');cx.globalAlpha=.8;cx.fillRect(lx-2,ly-10,tw+4,13);cx.globalAlpha=1;cx.fillStyle=COL[a%6];cx.fillText(lab,lx,ly)}
+ cx.fillStyle=v('--ink');cx.fillRect(W-s*20-10,W-14,s*20,3);cx.fillStyle=v('--mut');cx.font='11px system-ui';cx.fillText('200 m',W-s*20-10,W-20);
+ return cur}
+function panel(cur){const i=Math.min(S.T-1,Math.floor(tm/TM));const rm=Math.floor(tm/4),rp=n=>String(n).padStart(2,'0');$('clk').textContent=`${fmt(tm)} (tick ${i+1} of ${S.T}, minute ${Math.floor(tm-i*TM)} of ${TM}) \u00b7 at real pace ${Math.floor(rm/60)}:${rp(rm%60)} h in`;
+ const h=S.names.map((n,a)=>{const p=S.P[i][a],st=status(a,i),sg=cur[a].s;let e='<span class="mut">no errand</span>';
+  if(st){const g=st.g,c=st.s==='end'?`var(--${g.o})`:(TC[g.ty]||'#888');e=`<span class="chip" style="color:${c}">${esc(g.ty)}</span> `+(st.s==='end'?esc(OL[g.o]||g.o):st.s==='walk'?'heading to place':'at place')}
+  let sgh='';if(sg){const d=sg.type==='walk'?` ${sg.distance_m} m at ${esc(sg.gait)}, ${sg.t1-sg.t0} min`:` ${esc(sg.activity)}${sg.anchor?' at '+esc(sg.anchor):''}${sg.partner?' with '+esc(sg.partner):''}`;sgh=`<span class="chip" style="color:var(--${sg.type})">${sg.type}</span>${d} <span class="mut">(min ${sg.t0}-${sg.t1})</span><br>`}
+  const t=p[4]>=0?` \u2192 ${esc(S.tg[p[4]])}`:'',bd=cur[a].r&&cur[a].r.body?` <span class="mut">body: tempo ${cur[a].r.body.tempo}, posture ${cur[a].r.body.posture}, tension ${cur[a].r.body.tension} (0-4)</span><br>`:'';
+  return`<div class="av"><i class="dot" style="background:${COL[a%6]}"></i><div><b>${esc(n)}</b> <span class="mut">${esc(S.acts[p[3]])}${t} \u00b7 ${esc(S.zn[p[2]])}</span><br>${sgh}${bd}${e}</div></div>`}).join('');
+ if(h!==sig){sig=h;$('avs').innerHTML=h;
+  const ev=S.G.filter(g=>g.tk<=i+1).slice(-8).reverse();
+  $('evs').innerHTML=ev.length?ev.map(g=>`<button class="ev" type="button" data-t="${(g.tk-1)*TM}"><i class="dot" style="display:inline-block;background:${COL[g.a%6]};margin-right:6px"></i><b>${esc(S.names[g.a])}</b> ${esc(g.ty)} <span class="chip" style="color:var(--${g.o})">${esc(OL[g.o]||g.o)}</span> <span class="mut">tick ${g.tk}</span></button>`).join(''):'<span class="mut">'+(S.G.length?'No errand has ended yet.':'No goal_log.jsonl loaded.')+'</span>'}}
+function frame(ts){if(S){if(play){tm+=(ts-last)/1000*parseFloat($('sp').value);if(tm>=S.T*TM-1)tm=0;$('sl').value=tm}const c=draw();panel(c)}last=ts;requestAnimationFrame(frame)}
+function stats(){const A=S.A,T=S.T,N=S.N;let near=0,tot=0,km=0;const days=T/6,perday=[];
+ const nearest=(x,y)=>{let b=null,bd=1e9;for(const a of A){const d=Math.hypot(x*10-a.x_m,y*10-a.y_m);if(d<bd){bd=d;b=a.id}}return bd<=15?b:null};
+ for(let k=0;k<N;k++){for(let d0=0;d0<T;d0+=6){const st=new Set();for(let i=d0;i<Math.min(T,d0+6);i++){const p=S.P[i][k],n=nearest(p[0],p[1]);tot++;if(n){near++;st.add(n)}if(i)km+=Math.hypot(p[0]-S.P[i-1][k][0],p[1]-S.P[i-1][k][1])*10/1000}perday.push(st.size)}}
+ const c=[[Math.round(100*near/tot)+'%','time within 15 m of an anchor'],[(perday.reduce((a,b)=>a+b,0)/perday.length).toFixed(2),'distinct anchors per avatar per day'],[(km/N/days).toFixed(2),'km per avatar per day (tick endpoints)']];
+ if(S.TL){const w=[];let wm=0,sm=0,all=0,tk=0;for(const r of S.TL.flat())if(r){all+=r.tick_minutes;for(const s of r.segments){const d=s.t1-s.t0;if(s.type==='walk'){w.push(d);wm+=d}if(s.type==='sleep')sm+=d;if(s.type==='talk')tk+=d}}
+  w.sort((a,b)=>a-b);c.push([(100*wm/all).toFixed(1)+'%','of all time spent walking'],[w.length?w[w.length>>1]+' min':'-','median walk (simulated minutes)'],[w.length?(w[w.length>>1]*15)+' s':'-','median walk at real pace (1 simulated min = 15 real s)'],[(100*sm/all).toFixed(1)+'%','of all time asleep at home'],[(100*tk/all).toFixed(1)+'%','of all time in talk segments'])}
+ $('st').innerHTML=c.map(([a,b])=>`<div><b>${a}</b><span class="mut">${b}</span></div>`).join('');
+ $('stn').textContent='Distance is the sum of per-tick displacements, so detours inside a tick are not counted. Walk, sleep and talk shares need a timeline file. One tick is 4 simulated hours and one game day is 6 real hours, so at real pace one tick plays in 60 real minutes.'}
+function outcomes(){if(!S.G.length)return;$('lg').innerHTML=OUTS.map(o=>`<span style="--c:var(--${o})">${OL[o]}</span>`).join('');
+ $('oc').innerHTML=TYPES.map(t=>{const r=S.G.filter(g=>g.ty===t),n=r.length;if(!n)return'';const c={};r.forEach(g=>c[g.o]=(c[g.o]||0)+1);
+  return`<div class="row"><b>${t}</b> <span class="mut">n = ${n}${n<10?' (small sample)':''}</span><div class="bar">${OUTS.map(o=>c[o]?`<i style="width:${100*c[o]/n}%;background:var(--${o})" title="${OL[o]}: ${c[o]}"></i>`:'').join('')}</div><span class="small mut">${OUTS.filter(o=>c[o]).map(o=>`${OL[o].split(':')[0]} ${c[o]} (${Math.round(100*c[o]/n)}%)`).join(', ')}</span></div>`}).join('')}
+async function load(list){const msg=[];
+ for(const f of list){const t=await f.text(),n=f.name.toLowerCase();
+  try{if(/map_log/.test(n)){files.map=t;msg.push(`map_log: ${f.name}`)}else if(/timeline/.test(n)){files.tl=t;msg.push(`timeline: ${f.name}`)}else if(/stream.*\.(ndjson|jsonl)$/.test(n)){files.rp=t;msg.push(`stream replay: ${f.name}`)}else if(/goal_log/.test(n)){files.goal=t;msg.push(`goal_log: ${f.name}`)}
+   else if(/anchors.*\.json$/.test(n)){const j=JSON.parse(t);files.anchors=j.anchors||j;msg.push(`anchors: ${f.name}`)}else msg.push(`ignored: ${f.name}`)}catch(e){msg.push(`<span class="err">${esc(f.name)}: ${esc(e.message)}</span>`)}}
+ $('ld').innerHTML=msg.join('<br>')+(files.map?'':'<br><span class="err">map_log.txt is required.</span>');
+ if(files.map){try{build()}catch(e){$('ld').innerHTML+=`<br><span class="err">${esc(e.message)}</span>`}}}
+$('fi').onchange=e=>load([...e.target.files]);
+const dz=$('drop');['dragover','dragenter'].forEach(k=>dz.addEventListener(k,e=>{e.preventDefault();dz.classList.add('on')}));['dragleave','drop'].forEach(k=>dz.addEventListener(k,e=>{e.preventDefault();dz.classList.remove('on')}));
+dz.addEventListener('drop',e=>load([...e.dataTransfer.files]));
+$('pl').onclick=()=>{play=!play;$('pl').textContent=play?'Pause':'Play'};
+$('sl').oninput=e=>{tm=parseFloat(e.target.value)};
+$('pv').onclick=()=>{if(S){const i=Math.floor(tm/TM);tm=Math.max(0,(tm%TM>1?i:i-1)*TM);$('sl').value=tm}};
+$('nx').onclick=()=>{if(S){tm=Math.min(S.T*TM-1,(Math.floor(tm/TM)+1)*TM);$('sl').value=tm}};
+$('evs').onclick=e=>{const b=e.target.closest('.ev');if(b){tm=+b.dataset.t;$('sl').value=tm;play=false;$('pl').textContent='Play'}};
+$('th').onclick=()=>{theme=theme==='auto'?'light':theme==='light'?'dark':'auto';theme==='auto'?document.documentElement.removeAttribute('data-theme'):document.documentElement.dataset.theme=theme;$('th').textContent='Theme: '+theme};
+addEventListener('resize',size);requestAnimationFrame(frame);
+</script></div></body></html>
